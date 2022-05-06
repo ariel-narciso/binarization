@@ -37,9 +37,9 @@ int main() {
         histogram[gry_img.data[i]]++;
     }
 
-    // for (int i = 0; i < 256; i++) {
-    //     cout << i << ' ' << histogram[i] << '\n';
-    // }
+    for (int i = 0; i < 256; i++) {
+        cout << i << ' ' << histogram[i] << '\n';
+    }
 
     // cv::imshow("Oie", gry_img);
     // cv::imwrite("bloodborne_weight.png", gry_img);
