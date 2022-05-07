@@ -6,6 +6,7 @@
 
 #define CHN 3
 
+using ll = long long;
 using namespace std;
 
 int main() {
@@ -37,11 +38,50 @@ int main() {
         histogram[gry_img.data[i]]++;
     }
 
-    for (int i = 0; i < 256; i++) {
-        cout << i << ' ' << histogram[i] << '\n';
+    // for (int i = 0; i < 256; i++) {
+    //     cout << i << ' ' << histogram[i] << '\n';
+    // }
+
+    ll preffix_num[257], preffix_den[257];
+    
+    preffix_num[0] = 0;
+    preffix_den[0] = 0;
+
+    for (int i = 1; i <= 256; i++) {
+
+        preffix_num[i] = preffix_num[i - 1] + (i - 1) * histogram[i - 1];
+        preffix_den[i] = preffix_den[i - 1] + histogram[i - 1];
     }
 
-    // cv::imshow("Oie", gry_img);
+    int lx = 0, rx = 256;
+    int m;
+
+    while (lx + 1 < rx) {
+
+        m = (lx + rx) / 2;
+        // cout << m << '\n';
+
+        // cout << "-------------\n";
+        // cout << preffix_num[m] - preffix_num[lx] << ' ' << preffix_den[m] - preffix_den[lx] << '\n';
+        // cout << preffix_num[rx] - preffix_num[m] << ' ' << preffix_den[rx] - preffix_den[m] << '\n';
+        // cout << "-------------\n";
+
+        lx = (preffix_num[m] - preffix_num[lx]) / (preffix_den[m] - preffix_den[lx]);
+        rx = (preffix_num[rx] - preffix_num[m]) / (preffix_den[rx] - preffix_den[m]);
+
+        // cout << lx << ' ' << rx << '\n';
+    }
+
+    for (int i = 0; i < img.rows * img.cols; i++) {
+
+        if (gry_img.data[i] <= lx) {
+            gry_img.data[i] = 0;
+        } else {
+            gry_img.data[i] = 255;
+        }
+    }
+
+    cv::imshow("Oie", gry_img);
     // cv::imwrite("bloodborne_weight.png", gry_img);
-    // cv::waitKey(0);
+    cv::waitKey(0);
 }
