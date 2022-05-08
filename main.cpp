@@ -1,47 +1,34 @@
-#include <bits/stdc++.h>
+#include <iostream>
 #include <omp.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp> // serve so pra mostrar na tela
 
-#define CHN 3
-
 using ll = long long;
 using namespace std;
 
-int main() {
-
-    string filename = cv::samples::findFile("bloodborne.jpg");
-    cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
-
-    if (img.empty()) {
-
-        cout << "Deu ruin!!\n";
-        return 1;
-    }
-
-    cv::Mat gry_img = cv::Mat(img.rows, img.cols, CV_8UC1);
+void to_grayscale(const uchar *image, uchar *new_image, int n, int *histogram) {
 
     uchar b, g, r;
-    int histogram[256] = {0};
+    
+    for (int i = 0; i < n; i++) {
 
-    // cuidado com int overflow
-    for (int i = 0; i < img.rows * img.cols; i++) {
+        b = image[i * 3 + 0];
+        g = image[i * 3 + 1];
+        r = image[i * 3 + 2];
 
-        b = img.data[i * CHN + 0];
-        g = img.data[i * CHN + 1];
-        r = img.data[i * CHN + 2];
-
-        gry_img.data[i] = 0.114 * b + 0.587 * g + 0.299 * r; // imprecisão de ponto flutuante
+        new_image[i] = 0.114 * b + 0.587 * g + 0.299 * r; // imprecisão de ponto flutuante
         // gry_img.data[i] = b / 3 + g / 3 + r / 3;
-
-        histogram[gry_img.data[i]]++;
+        histogram[new_image[i]]++;
     }
 
     // for (int i = 0; i < 256; i++) {
     //     cout << i << ' ' << histogram[i] << '\n';
-    // }
+    // } cout << '\n';
+}
 
+void to_binary(uchar *image, int n, const int *histogram) {
+    
     ll preffix_num[257], preffix_den[257];
     
     preffix_num[0] = 0;
@@ -59,29 +46,66 @@ int main() {
     while (lx + 1 < rx) {
 
         m = (lx + rx) / 2;
-        // cout << m << '\n';
 
-        // cout << "-------------\n";
-        // cout << preffix_num[m] - preffix_num[lx] << ' ' << preffix_den[m] - preffix_den[lx] << '\n';
-        // cout << preffix_num[rx] - preffix_num[m] << ' ' << preffix_den[rx] - preffix_den[m] << '\n';
-        // cout << "-------------\n";
+        // cout << lx << ' ' << m << ' ' << rx << '\n';
 
         lx = (preffix_num[m] - preffix_num[lx]) / (preffix_den[m] - preffix_den[lx]);
         rx = (preffix_num[rx] - preffix_num[m]) / (preffix_den[rx] - preffix_den[m]);
-
-        // cout << lx << ' ' << rx << '\n';
     }
 
-    for (int i = 0; i < img.rows * img.cols; i++) {
+    // cout << preffix_num[115] << ' ' << preffix_num[114] << '\n';
+    // cout << preffix_den[115] << ' ' << preffix_den[114] << '\n';
 
-        if (gry_img.data[i] <= lx) {
-            gry_img.data[i] = 0;
+    for (int i = 0; i < n; i++) {
+
+        if (image[i] <= lx) {
+            image[i] = 0;
         } else {
-            gry_img.data[i] = 255;
+            image[i] = 255;
         }
     }
+}
 
-    cv::imshow("Oie", gry_img);
-    // cv::imwrite("bloodborne_weight.png", gry_img);
-    cv::waitKey(0);
+int main(int argc, char *argv[]) {
+
+    if (argc < 2) {
+
+        cout << "A image must be indicated inside the 'images' folder!\n";
+        return 1;
+    }
+
+    string filename;
+
+    try {
+        filename = cv::samples::findFile("images/" + string(argv[1]));
+    }
+    catch(const std::exception& e) {
+        std::cerr << e.what() << '\n';
+        return 1;
+    }
+    
+    cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
+
+    if (img.empty()) {
+
+        cout << "Could not read the image: " << filename << '\n';
+        return 1;
+    }
+
+    cv::Mat gry_img = cv::Mat(img.rows, img.cols, CV_8UC1);
+    int histogram[256] = {0};
+    
+    // cuidado com int overflow em resoluções muito altas
+    to_grayscale(img.data, gry_img.data, img.rows * img.cols, histogram);
+
+    to_binary(gry_img.data, img.rows * img.cols, histogram);
+
+    // cv::imshow("Oie", gry_img);
+    // cv::waitKey(0);
+
+    if (argc == 2) {
+        cv::imwrite(filename, gry_img);
+    } else {
+        cv::imwrite("images/" + string(argv[2]), gry_img);
+    }
 }
