@@ -6,7 +6,7 @@ Application in C++ with OpenMP and OpenCV to get a binary image from a color ima
 ### :gear: Prerequisites
 
 Install OpenCV
-```bash 
+```bash
 sudo apt-get install libopencv-dev
 ```
 ### 💻 Compile and Running application
