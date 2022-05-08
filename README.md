@@ -14,9 +14,9 @@ sudo apt-get install libopencv-dev
 g++ main.cpp -o main -I/usr/include/opencv4 -lopencv_core -lopencv_imgcodecs -lopencv_highgui -fopenmp
 ```
 ```bash
-./main image_to_binarizing.extension new_image.extension
+./main origin_image.extension new_image.extension
 ```
-Where 'image_to_binarizing' is located in 'images' folder.
+The 'origin_image' must be located in 'images' folder.
 The new image will be generated in 'images' folder.
 This second argument is optional and if it is not present,
 the origin image will be replaced by new image
