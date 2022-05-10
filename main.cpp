@@ -40,25 +40,31 @@ void to_binary(uchar *image, int n, const int *histogram) {
         preffix_den[i] = preffix_den[i - 1] + histogram[i - 1];
     }
 
-    int lx = 0, rx = 256;
-    int m;
+    int a, b;
 
-    while (lx + 1 < rx) {
+    for (a = 0; a < 256 && histogram[a] == 0; a++);
+    for (b = 255; b >= 0 && histogram[b] == 0; b--);
 
-        m = (lx + rx) / 2;
+    double lx, rx;
+    double m0 = a, m1 = (a + b) / 2.0;
 
-        // cout << lx << ' ' << m << ' ' << rx << '\n';
+    cout << a << ' ' << b << '\n';
 
-        lx = (preffix_num[m] - preffix_num[lx]) / (preffix_den[m] - preffix_den[lx]);
-        rx = (preffix_num[rx] - preffix_num[m]) / (preffix_den[rx] - preffix_den[m]);
+    while (abs(m0 - m1) > 1e-3) {
+
+        m0 = m1;
+
+        lx = (double)preffix_num[(int)m0 + 1] / preffix_den[(int)m0 + 1];
+        rx = (double)(preffix_num[b + 1] - preffix_num[(int)m0 + 1]) / (preffix_den[b + 1] - preffix_den[(int)m0 + 1]);
+
+        m1 = (lx + rx) / 2;
+
+        // cout << m0 << ' ' << lx << ' ' << rx << ' ' << m1 << '\n';
     }
-
-    // cout << preffix_num[115] << ' ' << preffix_num[114] << '\n';
-    // cout << preffix_den[115] << ' ' << preffix_den[114] << '\n';
 
     for (int i = 0; i < n; i++) {
 
-        if (image[i] <= lx) {
+        if (image[i] <= m0) {
             image[i] = 0;
         } else {
             image[i] = 255;
@@ -99,9 +105,6 @@ int main(int argc, char *argv[]) {
     to_grayscale(img.data, gry_img.data, img.rows * img.cols, histogram);
 
     to_binary(gry_img.data, img.rows * img.cols, histogram);
-
-    // cv::imshow("Oie", gry_img);
-    // cv::waitKey(0);
 
     if (argc == 2) {
         cv::imwrite(filename, gry_img);
