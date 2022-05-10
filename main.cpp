@@ -55,7 +55,11 @@ void to_binary(uchar *image, int n, const int *histogram) {
         m0 = m1;
 
         lx = (double)preffix_num[(int)m0 + 1] / preffix_den[(int)m0 + 1];
-        rx = (double)(preffix_num[b + 1] - preffix_num[(int)m0 + 1]) / (preffix_den[b + 1] - preffix_den[(int)m0 + 1]);
+        
+        rx = (
+            (double)(preffix_num[b + 1] - preffix_num[(int)m0 + 1])
+            / (preffix_den[b + 1] - preffix_den[(int)m0 + 1])
+        );
 
         m1 = (lx + rx) / 2;
 
