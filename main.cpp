@@ -51,8 +51,6 @@ void to_binary(uchar *image, int n, const int *histogram) {
 		);
 
 		m1 = (lx + rx) / 2;
-
-		cout << m0 << ' ' << lx << ' ' << rx << ' ' << m1 << '\n';
 	}
 
 	for (int i = 0; i < n; i++) {
