@@ -20,12 +20,14 @@ sudo apt-get install libopencv-dev
 
 ### 💻 Compile and Run application
 ```bash
-g++ main.cpp -o main -I/usr/include/opencv4 -lopencv_core -lopencv_imgcodecs -lopencv_highgui -fopenmp
+g++ main.cpp -I/usr/include/opencv4 -lopencv_core -lopencv_imgcodecs -fopenmp
 ```
 ```bash
-./main origin_image.extension new_image.extension
+./main a.out origin_image.extension new_image.extension
 ```
-The 'origin_image' must be located in 'images' folder.
-The new image will be generated in 'images' folder.
+The 'origin_image' is the color image to binarize for.
+It must be located inside the 'images' folder.
+The new image will be generated inside 'images' folder.
+The name of it is 'new_image.extension'.
 This second argument is optional and if it is not present,
 the origin image will be replaced by new image.
