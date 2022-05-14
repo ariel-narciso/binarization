@@ -8,6 +8,7 @@ using namespace std;
 
 void to_grayscale(const uchar *image, uchar *new_image, int n, int *histogram) {
 
+	#pragma omp for parallel reduction(+ : histogram[:256])
 	for (int i = 0; i < n; i++) {	
 		new_image[i] = (
 			0.114 * image[i * 3 + 0] +
