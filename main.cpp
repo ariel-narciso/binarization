@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
 
 	if (t == -1) {
 
-		cout << "Could not convert to binary_image\n";
-		return -1;
+		cout << "Could not convert to a binary_image\n";
+		return 1;
 	}
 
 	begin = omp_get_wtime();
