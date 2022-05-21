@@ -8,8 +8,8 @@ using namespace std;
 
 void to_grayscale(const uchar *image, uchar *new_image, int n, int *histogram) {
 
-	#pragma omp for parallel reduction(+ : histogram[:256])
-	for (int i = 0; i < n; i++) {	
+	#pragma omp parallel for reduction(+ : histogram[:256])
+	for (int i = 0; i < n; i++) {
 		new_image[i] = (
 			0.114 * image[i * 3 + 0] +
 			0.587 * image[i * 3 + 1] +
@@ -53,7 +53,7 @@ int threshold(uchar *image, int n, int *histogram) {
 
 		m1 = (lx + rx) / 2;
 
-		// cout << m0 << ' ' << lx << ' ' << rx << ' ' << m1 << '\n';
+		cout << m0 << ' ' << lx << ' ' << rx << ' ' << m1 << '\n';
 	}
 
 	return m0;
@@ -61,6 +61,7 @@ int threshold(uchar *image, int n, int *histogram) {
 
 void to_binary(uchar *image, int n, int threshold) {
 
+	#pragma omp parallel for
 	for (int i = 0; i < n; i++) {
 		if (image[i] <= threshold) {
 			image[i] = 0;
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	string filename;
+	double begin, end;
 
 	try {
 		filename = cv::samples::findFile("images/" + string(argv[1]));
@@ -87,8 +89,12 @@ int main(int argc, char *argv[]) {
 		std::cerr << e.what() << '\n';
 		return 1;
 	}
-	
+
+	begin = omp_get_wtime();
 	cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
+	end = omp_get_wtime();
+
+	cout << "read --> " << end - begin << '\n';
 
 	if (img.empty()) {
 
@@ -100,15 +106,31 @@ int main(int argc, char *argv[]) {
 	int histogram[256] = {0};
 	
 	// be careful with integer overflow in high resolutions (> 8k)
+	begin = omp_get_wtime();
 	to_grayscale(img.data, gry_img.data, img.rows * img.cols, histogram);
+	end = omp_get_wtime();
 
+	cout << "gray --> " << end - begin << '\n'; 
+
+	begin = omp_get_wtime();
 	int t = threshold(gry_img.data, img.rows * img.cols, histogram);
+	end = omp_get_wtime();
 
+	cout << "threshold --> " << end - begin << '\n';
+
+	begin = omp_get_wtime();
 	to_binary(gry_img.data, img.rows * img.cols, t);
+	end = omp_get_wtime();
 
+	cout << "binary --> " << end - begin << '\n';
+	
+	begin = omp_get_wtime();
 	if (argc == 2) {
 		cv::imwrite(filename, gry_img);
 	} else {
 		cv::imwrite("images/" + string(argv[2]), gry_img);
 	}
+	end = omp_get_wtime();
+
+	cout << "write --> " << end - begin << '\n';
 }
