@@ -19,7 +19,7 @@ void to_grayscale(const uchar *image, uchar *new_image, int n, int *histogram) {
 	}
 }
 
-void to_binary(uchar *image, int n, const int *histogram) {
+int threshold(uchar *image, int n, int *histogram) {
 
 	ll preffix[2][256];
 
@@ -52,11 +52,17 @@ void to_binary(uchar *image, int n, const int *histogram) {
 		);
 
 		m1 = (lx + rx) / 2;
+
+		// cout << m0 << ' ' << lx << ' ' << rx << ' ' << m1 << '\n';
 	}
 
-	for (int i = 0; i < n; i++) {
+	return m0;
+}
 
-		if (image[i] <= m0) {
+void to_binary(uchar *image, int n, int threshold) {
+
+	for (int i = 0; i < n; i++) {
+		if (image[i] <= threshold) {
 			image[i] = 0;
 		} else {
 			image[i] = 255;
@@ -96,7 +102,9 @@ int main(int argc, char *argv[]) {
 	// be careful with integer overflow in high resolutions (> 8k)
 	to_grayscale(img.data, gry_img.data, img.rows * img.cols, histogram);
 
-	to_binary(gry_img.data, img.rows * img.cols, histogram);
+	int t = threshold(gry_img.data, img.rows * img.cols, histogram);
+
+	to_binary(gry_img.data, img.rows * img.cols, t);
 
 	if (argc == 2) {
 		cv::imwrite(filename, gry_img);
