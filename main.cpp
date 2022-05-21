@@ -2,6 +2,7 @@
 #include <omp.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
+#define EPS 1e-3
 
 using ll = long long;
 using namespace std;
@@ -37,10 +38,14 @@ int threshold(uchar *image, int n, int *histogram) {
 	for (a = 0; a < 256 && histogram[a] == 0; a++);
 	for (b = 255; b >= 0 && histogram[b] == 0; b--);
 
+	if (a >= b) {
+		return -1;
+	}
+
 	double lx, rx;
 	double m0 = a, m1 = (a + b) / 2.0;
 
-	while (abs(m0 - m1) > 1e-3) {
+	while (abs(m0 - m1) > EPS) {
 
 		m0 = m1;
 
@@ -53,7 +58,7 @@ int threshold(uchar *image, int n, int *histogram) {
 
 		m1 = (lx + rx) / 2;
 
-		cout << m0 << ' ' << lx << ' ' << rx << ' ' << m1 << '\n';
+		// cout << m0 << ' ' << lx << ' ' << rx << ' ' << m1 << '\n';
 	}
 
 	return m0;
@@ -90,9 +95,12 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	double s = 0;
+
 	begin = omp_get_wtime();
 	cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
 	end = omp_get_wtime();
+	s += end - begin;
 
 	cout << "read --> " << end - begin << '\n';
 
@@ -109,18 +117,27 @@ int main(int argc, char *argv[]) {
 	begin = omp_get_wtime();
 	to_grayscale(img.data, gry_img.data, img.rows * img.cols, histogram);
 	end = omp_get_wtime();
+	s += end - begin;
 
 	cout << "gray --> " << end - begin << '\n'; 
 
 	begin = omp_get_wtime();
 	int t = threshold(gry_img.data, img.rows * img.cols, histogram);
 	end = omp_get_wtime();
+	s += end - begin;
 
 	cout << "threshold --> " << end - begin << '\n';
+
+	if (t == -1) {
+
+		cout << "Could not convert to binary_image\n";
+		return -1;
+	}
 
 	begin = omp_get_wtime();
 	to_binary(gry_img.data, img.rows * img.cols, t);
 	end = omp_get_wtime();
+	s += end - begin;
 
 	cout << "binary --> " << end - begin << '\n';
 	
@@ -131,6 +148,8 @@ int main(int argc, char *argv[]) {
 		cv::imwrite("images/" + string(argv[2]), gry_img);
 	}
 	end = omp_get_wtime();
+	s += end - begin;
 
 	cout << "write --> " << end - begin << '\n';
+	cout << "total --> " << s << '\n';
 }
