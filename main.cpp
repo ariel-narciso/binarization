@@ -37,7 +37,11 @@ int threshold(uchar *image, int n, int *histogram) {
 	for (a = 0; a < 256 && histogram[a] == 0; a++);
 	for (b = 255; b >= 0 && histogram[b] == 0; b--);
 
-	if (a >= b) {
+	if (a == b) {
+		return a;
+	}
+
+	if (a > b) {
 		return -1;
 	}
 
@@ -110,7 +114,7 @@ int main(int argc, char *argv[]) {
 
 	if (t == -1) {
 
-		cout << "Could not convert to a binary_image\n";
+		cout << "Could not convert to a binary image\n";
 		return 1;
 	}
 
