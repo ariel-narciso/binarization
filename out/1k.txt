@@ -1,0 +1,40 @@
+num_threads --> 2
+	read
+		median --> 0.0266229
+		sd --> 0.000195163
+	gray
+		median --> 0.00784207
+		sd --> 3.80887e-07
+	threshold
+		median --> 8.2393e-06
+		sd --> 1.32283e-06
+	binary
+		median --> 0.00110518
+		sd --> 1.70347e-05
+	write
+		median --> 0.0157077
+		sd --> 0.000290619
+	total
+		median --> 0.051286
+		sd --> 0.000401248
+
+num_threads --> 4
+	read
+		median --> 0.0266357
+		sd --> 8.34755e-05
+	gray
+		median --> 0.00399064
+		sd --> 6.96815e-08
+	threshold
+		median --> 7.6511e-06
+		sd --> 1.5539e-07
+	binary
+		median --> 0.000557915
+		sd --> 1.65395e-06
+	write
+		median --> 0.0155667
+		sd --> 3.0328e-05
+	total
+		median --> 0.0467586
+		sd --> 0.000137162
+
