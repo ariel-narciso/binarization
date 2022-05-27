@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 #include <omp.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -7,9 +8,9 @@
 using ll = long long;
 using namespace std;
 
-void to_grayscale(const uchar *image, uchar *new_image, int n, int *histogram) {
+void to_grayscale(const uchar *image, uchar *new_image, int n, int *histogram, int n_threads) {
 
-	#pragma omp parallel for reduction(+ : histogram[:256])
+	#pragma omp parallel for num_threads(n_threads) reduction(+ : histogram[:256])
 	for (int i = 0; i < n; i++) {
 		new_image[i] = (
 			0.114 * image[i * 3 + 0] +
@@ -66,9 +67,9 @@ int threshold(uchar *image, int n, int *histogram) {
 	return m0;
 }
 
-void to_binary(uchar *image, int n, int threshold) {
+void to_binary(uchar *image, int n, int threshold, int n_threads) {
 
-	#pragma omp parallel for
+	#pragma omp parallel for num_threads(n_threads)
 	for (int i = 0; i < n; i++) {
 		if (image[i] <= threshold) {
 			image[i] = 0;
@@ -80,31 +81,26 @@ void to_binary(uchar *image, int n, int threshold) {
 
 int main(int argc, char *argv[]) {
 
-	if (argc < 2) {
+	if (argc < 3) {
 
-		cout << "A image must be indicated inside the 'images' folder!\n";
+		cout << "A number and a image must be indicated inside the 'images' folder!\n";
 		return 1;
 	}
 
 	string filename;
-	double begin, end;
+	int n = atoi(argv[1]);
+
+	double begin, end, t;
 
 	try {
-		filename = cv::samples::findFile("images/" + string(argv[1]));
+		filename = cv::samples::findFile("images/" + string(argv[2]));
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
 		return 1;
 	}
 
-	double s = 0;
-
-	begin = omp_get_wtime();
 	cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
-	end = omp_get_wtime();
-	s += end - begin;
-
-	cout << "read --> " << end - begin << '\n';
 
 	if (img.empty()) {
 
@@ -112,46 +108,119 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	cv::Mat gry_img = cv::Mat(img.rows, img.cols, CV_8UC1);
-	int histogram[256] = {0};
-	
-	// be careful with integer overflow in high resolutions (> 8k)
-	begin = omp_get_wtime();
-	to_grayscale(img.data, gry_img.data, img.rows * img.cols, histogram);
-	end = omp_get_wtime();
-	s += end - begin;
+	for (int threads : {2, 4}) {
 
-	cout << "gray --> " << end - begin << '\n'; 
+		double read[n], gray[n], thrshld[n], binary[n], write[n], total[n];
 
-	begin = omp_get_wtime();
-	int t = threshold(gry_img.data, img.rows * img.cols, histogram);
-	end = omp_get_wtime();
-	s += end - begin;
+		for (int i = 0; i < n; i++) {
 
-	cout << "threshold --> " << end - begin << '\n';
+			begin = omp_get_wtime();
+			img = cv::imread(filename, cv::IMREAD_COLOR);
+			end = omp_get_wtime();
 
-	if (t == -1) {
+			read[i] = end - begin;
 
-		cout << "Could not convert to binary image\n";
-		return 1;
+			cv::Mat gry_img = cv::Mat(img.rows, img.cols, CV_8UC1);
+			int histogram[256] = {0};
+			
+			// be careful with integer overflow in high resolutions (> 8k)
+			begin = omp_get_wtime();
+			to_grayscale(img.data, gry_img.data, img.rows * img.cols, histogram, threads);
+			end = omp_get_wtime();
+			
+			gray[i] = end - begin;
+
+			begin = omp_get_wtime();
+			t = threshold(gry_img.data, img.rows * img.cols, histogram);
+			end = omp_get_wtime();
+			
+			thrshld[i] = end - begin;
+
+			if (t == -1) {
+
+				cout << "Could not convert to binary image\n";
+				return 1;
+			}
+
+			begin = omp_get_wtime();
+			to_binary(gry_img.data, img.rows * img.cols, t, threads);
+			end = omp_get_wtime();
+			
+			binary[i] = end - begin;
+			
+			begin = omp_get_wtime();
+			if (argc == 3) {
+				cv::imwrite(filename, gry_img);
+			} else {
+				cv::imwrite("images/" + string(argv[3]), gry_img);
+			}
+			end = omp_get_wtime();
+
+			write[i] = end - begin;
+			total[i] = read[i] + gray[i] + thrshld[i] + binary[i] + write[i];
+		}
+
+		double read_median = accumulate(read, read + n, 0.0) / n;
+		double gray_median = accumulate(gray, gray + n, 0.0) / n;
+		double thrshld_median = accumulate(thrshld, thrshld + n, 0.0) / n;
+		double binary_median = accumulate(binary, binary + n, 0.0) / n;
+		double write_median = accumulate(write, write + n, 0.0) / n;
+		double total_median = accumulate(total, total + n, 0.0) / n;
+
+		double read_sd = 0, gray_sd = 0, thrshld_sd = 0, binary_sd = 0, write_sd = 0, total_sd = 0;
+
+		for (double x : read) {
+			read_sd += (x - read_median) * (x - read_median);
+		}
+
+		read_sd = sqrt(read_sd / n);
+
+		// ---------------------------------------------------------
+
+		for (double x : gray) {
+			gray_sd += (x - gray_median) * (x - gray_median);
+		}
+
+		read_sd = sqrt(gray_sd / n);
+
+		// ----------------------------------------------------------
+
+		for (double x : thrshld) {
+			thrshld_sd += (x - thrshld_median) * (x - thrshld_median);
+		}
+
+		thrshld_sd = sqrt(thrshld_sd / n);
+
+		// ------------------------------------------------------------
+
+		for (double x : binary) {
+			binary_sd += (x - binary_median) * (x - binary_median);
+		}
+
+		binary_sd = sqrt(binary_sd / n);
+
+		// ------------------------------------------------------------
+
+		for (double x : write) {
+			write_sd += (x - write_median) * (x - write_median);
+		}
+
+		write_sd = sqrt(write_sd / n);
+
+		// ------------------------------------------------------------
+
+		for (double x : total) {
+			total_sd += (x - total_median) * (x - total_median);
+		}
+
+		total_sd = sqrt(total_sd / n);
+
+		cout << "num_threads --> " << threads << '\n'; 
+		cout << "\tread\n\t\tmedian --> " << read_median << "\n\t\tsd --> " << read_sd << '\n';
+		cout << "\tgray\n\t\tmedian --> " << gray_median << "\n\t\tsd --> " << gray_sd << '\n';
+		cout << "\tthreshold\n\t\tmedian --> " << thrshld_median << "\n\t\tsd --> " << thrshld_sd << '\n';
+		cout << "\tbinary\n\t\tmedian --> " << binary_median << "\n\t\tsd --> " << binary_sd << '\n';
+		cout << "\twrite\n\t\tmedian --> " << write_median << "\n\t\tsd --> " << write_sd << '\n';
+		cout << "\ttotal\n\t\tmedian --> " << total_median << "\n\t\tsd --> " << total_sd << "\n\n";
 	}
-
-	begin = omp_get_wtime();
-	to_binary(gry_img.data, img.rows * img.cols, t);
-	end = omp_get_wtime();
-	s += end - begin;
-
-	cout << "binary --> " << end - begin << '\n';
-	
-	begin = omp_get_wtime();
-	if (argc == 2) {
-		cv::imwrite(filename, gry_img);
-	} else {
-		cv::imwrite("images/" + string(argv[2]), gry_img);
-	}
-	end = omp_get_wtime();
-	s += end - begin;
-
-	cout << "write --> " << end - begin << '\n';
-	cout << "total --> " << s << '\n';
 }
