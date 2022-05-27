@@ -145,10 +145,10 @@ int main(int argc, char *argv[]) {
 		binary[i] = end - begin;
 		
 		begin = omp_get_wtime();
-		if (argc == 2) {
+		if (argc == 3) {
 			cv::imwrite(filename, gry_img);
 		} else {
-			cv::imwrite("images/" + string(argv[2]), gry_img);
+			cv::imwrite("images/" + string(argv[3]), gry_img);
 		}
 		end = omp_get_wtime();
 
