@@ -1,0 +1,19 @@
+read
+	median --> 0.00682932
+	sd --> 0.000257405
+gray
+	median --> 0.00548556
+	sd --> 0.00592911
+threshold
+	median --> 9.4586e-06
+	sd --> 3.34158e-06
+binary
+	median --> 0.000458944
+	sd --> 6.08412e-05
+write
+	median --> 0.0062281
+	sd --> 9.5555e-05
+total
+	median --> 0.0190114
+	sd --> 0.00610856
+
